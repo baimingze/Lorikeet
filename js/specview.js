@@ -114,6 +114,7 @@
 	        labelPrecursor: "labelPrecursor",
             immoniumIons: "immoniumIons",
 	        reporterIons: "reporterIons",
+            showIonTable: "showIonTable", //
 	        anticInfo: "anticInfo"
 	};
 
@@ -373,7 +374,13 @@
         container.data("anticReporter", 0); // total annotated ion current: reporter ions
 
 
-        var maxInt = getMaxInt(options);
+//        var maxInt = getMaxInt(options);
+        var maxInt = getMaxInt(options.peaks);
+        var maxIntUp = maxInt;      //get max peaks value in up peak list
+        var maxIntDown = 0;
+        if(options.peaks2){
+            maxIntDown = getMaxInt(options.peaks2);   //get max peaks value in down peak lis
+        }
         var __xrange = getPlotXRange(options);
 
         var plotOptions =  {
@@ -391,21 +398,52 @@
                 xaxis: { tickLength: 3, tickColor: "#000",
                          min: __xrange.xmin,
                          max: __xrange.xmax},
-                yaxis: { tickLength: 0, tickColor: "#000",
-                         max: maxInt*1.1,
-                         ticks: [0, maxInt*0.1, maxInt*0.2, maxInt*0.3, maxInt*0.4, maxInt*0.5,
-                                 maxInt*0.6, maxInt*0.7, maxInt*0.8, maxInt*0.9, maxInt],
-                         tickFormatter: function(val, axis) {return Math.round((val * 100)/maxInt)+"%";}}
+                
 	        }
-        container.data("plotOptions", plotOptions);
-        container.data("maxInt", maxInt);
 
+        yaxis = { tickLength: 0, tickColor: "#000",
+            max: maxInt*1.1,
+            ticks: [0, maxInt*0.1, maxInt*0.2, maxInt*0.3, maxInt*0.4, maxInt*0.5,
+            maxInt*0.6, maxInt*0.7, maxInt*0.8, maxInt*0.9, maxInt],
+            tickFormatter: function(val, axis) {return Math.round((val * 100)/maxInt)+"%";}
+        }    
+
+        yaxes = [
+            { tickLength: 0, tickColor: "#000",
+                max: maxIntUp*1.1,
+                min: maxIntUp*-1.1,
+                ticks: [0, maxIntUp*0.1, maxIntUp*0.2, maxIntUp*0.3, maxIntUp*0.4, maxIntUp*0.5,
+                    maxIntUp*0.6, maxIntUp*0.7, maxIntUp*0.8, maxIntUp*0.9, maxIntUp],
+                tickFormatter: function(val, axis) {return Math.round((val * 100)/maxIntUp)+"%";}
+            },
+            { tickLength: 0, tickColor: "#000",
+                min: maxIntDown*-1.1,
+                max: maxIntDown*1.1,
+                position:"bottom",
+                ticks: [0, maxIntDown*0.1, maxIntDown*0.2, maxIntDown*0.3, maxIntDown*0.4, maxIntDown*0.5,
+                    maxIntDown*0.6, maxIntDown*0.7, maxIntDown*0.8, maxIntDown*0.9, maxIntDown],
+                tickFormatter: function(val, axis) {return Math.round((val * 100)/maxIntDown)+"%";},
+                transform: function (v) { return -v; },
+            }
+        ]     
+
+        //added double yaxis for butterfly comparing:
+        if (maxIntDown > 0)
+            plotOptions['yaxes'] =  yaxes;
+        else
+            plotOptions['yaxis'] =  yaxis;
+
+        container.data("plotOptions", plotOptions);
+        container.data("maxInt", maxInt);   
     }
 
-	function getMaxInt(options) {
+//	function getMaxInt(options) {//rewrite for two peak lists
+	function getMaxInt(peaks) {
 		var maxInt = 0;
-		for(var j = 0; j < options.peaks.length; j += 1) {
-			var peak = options.peaks[j];
+//		for(var j = 0; j < options.peaks.length; j += 1) { 
+//			var peak = options.peaks[j];                    
+		for(var j = 0; j < peaks.length; j += 1) {  
+			var peak = peaks[j];                   
 			if(peak[1] > maxInt) {
 				maxInt = peak[1];
 			}
@@ -413,7 +451,7 @@
 		//alert(maxInt);
 		return maxInt;
 	}
-	
+
 	function round(number) {
 		return number.toFixed(4);
 	}
@@ -1055,7 +1093,15 @@
 		calculateTheoreticalSeries(container, selectedIonTypes);
 		
 		// add the un-annotated peaks
-		var data = [{data: options.peaks, color: "#bbbbbb", labelType: 'none'}];
+//		var data = [{data: options.peaks, color: "#bbbbbb", labelType: 'none'}];
+
+        //added two peak lists into data
+        var peaks1 = {data: options.peaks, color: "#bbbbbb", labelType: 'none', yaxis:1};
+        var peaks2 = {data: options.peaks2, color: "light-blue", labelType: 'none',yaxis:2 };
+        var data = [];
+        data.push(peaks1);
+        data.push(peaks2);
+
 		
 		// add the annotated peaks
 		var seriesMatches = getSeriesMatches(container, selectedIonTypes);
